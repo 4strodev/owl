@@ -36,34 +36,38 @@ func NewProject(config ProjectConfig) *Project {
 // Create the instantiated project
 func (self *Project) Create() error {
 	// Getting folder name
-	folderName := fmt.Sprintf("./%s", self.Config.Name)
 	var err error
 
-	err = self.LoadTemplate()
+	// Loading template information if exist
+	fmt.Printf("Searching template '%s'\n", self.Config.TemplateName)
+	err = self.loadTemplate()
 	if err != nil {
 		return err
 	}
 
-	err = self.CreateRootFolder(folderName)
+	// Creating application folder
+	fmt.Printf("Creating folder '%s'\n", self.Config.Name)
+	err = self.CreateRootFolder(self.Config.Name)
 	if err != nil {
 		return err
 	}
 
-	err = self.CopyTemplate()
-	if err != nil {
-		return err
-	}
+	// Copying template content
+	fmt.Printf("Copying template\n")
+	self.copyDir(self.Template.Path, self.Config.Name)
+
+	fmt.Printf("Project craeted succesfully\n")
 
 	return nil
 }
 
-func (self *Project) LoadTemplate() error {
+func (self *Project) loadTemplate() error {
 	var err error
 	if self.Config.TemplateName == "" {
 		err = fmt.Errorf(TEMPLATE_NOT_PASSED)
 	}
 
-	self.Template, err = self.SearchLocalTemplate(self.Config.LocalTemplatesDirs, self.Config.TemplateName)
+	self.Template, err = self.searchLocalTemplate(self.Config.LocalTemplatesDirs, self.Config.TemplateName)
 
 	if err != nil {
 		err = fmt.Errorf(TEMPLATE_NOT_FOUND)
@@ -73,7 +77,7 @@ func (self *Project) LoadTemplate() error {
 }
 
 // Search template in a local folder and return it
-func (self *Project) SearchLocalTemplate(directories []string, templateName string) (Template, error) {
+func (self *Project) searchLocalTemplate(directories []string, templateName string) (Template, error) {
 	var template Template
 	var templateFound bool
 
@@ -107,7 +111,7 @@ func (self *Project) SearchLocalTemplate(directories []string, templateName stri
 }
 
 // Search template in a repo and return it
-func (self *Project) SearchRemoteTemplate(template string) bool {
+func (self *Project) searchRemoteTemplate(template string) bool {
 	return false
 }
 
@@ -131,25 +135,59 @@ func (self *Project) CreateRootFolder(path string) error {
 	return nil
 }
 
-func (self *Project) CopyTemplate() error {
-	for _, fileInfo := range self.Template.Content {
+func (self *Project) copyDir(targetDirPath string, destination string) {
+	var err error
+	var pendingDirs []string
+
+	// Reading directory content
+	targetContent, err := afero.ReadDir(self.fs, targetDirPath)
+	if err != nil {
+		log.Panicf("Error reading %s: %s", targetDirPath, err)
+	}
+
+	for _, fileInfo := range targetContent {
 		// Path is the directory dirPath that contains the files
-		dirPath := self.Template.Path
 		if fileInfo.IsDir() {
-			// TODO if is a directory copy the content of the directory
+			// Adding dir to pending directories
+			pendingDirs = append(pendingDirs, fileInfo.Name())
 			continue
 		}
 
-		destinationFile, err := self.fs.Create(path.Join(self.Config.Name, fileInfo.Name()))
+		// Copying only files for the current directory
+		destinationFilePath := path.Join(destination, fileInfo.Name())
+		// Copying file using the same permissions
+		destinationFile, err := self.fs.OpenFile(destinationFilePath, os.O_RDWR | os.O_CREATE, fileInfo.Mode())
 		if err != nil {
-			log.Panicf("Error while copying the content of the template %s\n", err.Error())
+			log.Panicf("Error while creating %s file: %s\n", destinationFilePath, err.Error())
 		}
 
-		targetFileContent, err := afero.ReadFile(self.fs, path.Join(dirPath, fileInfo.Name()))
+		// Reading the target file and copying content to destination file
+		targetfilePath := path.Join(targetDirPath, fileInfo.Name())
+		targetFileContent, err := afero.ReadFile(self.fs, targetfilePath)
 		_, err = destinationFile.Write(targetFileContent)
 		if err != nil {
 			log.Panicf("Error while writing to file %s: %s", destinationFile.Name(), err)
 		}
+
+		fmt.Printf("File '%s' copyied succesfully\n", targetfilePath)
+
+		// Closing now to avoid memory overflow
+		destinationFile.Close()
 	}
-	return nil
+
+	// If there are pending directories
+	if len(pendingDirs) > 0 {
+		// Copy each directory
+		for _, dir := range pendingDirs {
+			targetDirPath := path.Join(targetDirPath, dir)
+			destinationDirPath := path.Join(destination, dir)
+
+			err = self.fs.Mkdir(destinationDirPath, os.FileMode(DIR_MODE))
+			if err != nil {
+				log.Panicf("Error craeting dir %s: %s", destinationDirPath, err)
+			}
+
+			self.copyDir(targetDirPath, destinationDirPath)
+		}
+	}
 }
