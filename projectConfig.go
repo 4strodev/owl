@@ -1,4 +1,4 @@
-package octopus
+package owl
 
 type ProjectConfig struct {
 	Name string

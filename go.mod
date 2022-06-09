@@ -1,4 +1,4 @@
-module github.com/4strodev/octopus
+module github.com/4strodev/owl
 
 go 1.18
 

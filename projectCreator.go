@@ -1,4 +1,4 @@
-package octopus
+package owl
 
 import (
 	"fmt"
