@@ -137,7 +137,7 @@ func (self *Project) CreateRootFolder(path string) error {
 
 func (self *Project) copyDir(targetDirPath string, destination string) {
 	var err error
-	var pendingDirs []string
+	var pendingDirs []os.FileInfo
 
 	// Reading directory content
 	targetContent, err := afero.ReadDir(self.fs, targetDirPath)
@@ -149,7 +149,7 @@ func (self *Project) copyDir(targetDirPath string, destination string) {
 		// Path is the directory dirPath that contains the files
 		if fileInfo.IsDir() {
 			// Adding dir to pending directories
-			pendingDirs = append(pendingDirs, fileInfo.Name())
+			pendingDirs = append(pendingDirs, fileInfo)
 			continue
 		}
 
@@ -179,10 +179,10 @@ func (self *Project) copyDir(targetDirPath string, destination string) {
 	if len(pendingDirs) > 0 {
 		// Copy each directory
 		for _, dir := range pendingDirs {
-			targetDirPath := path.Join(targetDirPath, dir)
-			destinationDirPath := path.Join(destination, dir)
+			targetDirPath := path.Join(targetDirPath, dir.Name())
+			destinationDirPath := path.Join(destination, dir.Name())
 
-			err = self.fs.Mkdir(destinationDirPath, os.FileMode(DIR_MODE))
+			err = self.fs.Mkdir(destinationDirPath, os.FileMode(dir.Mode()))
 			if err != nil {
 				log.Panicf("Error craeting dir %s: %s", destinationDirPath, err)
 			}
