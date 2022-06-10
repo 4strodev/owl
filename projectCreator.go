@@ -11,8 +11,7 @@ import (
 
 const (
 	// Permission MODES
-	DIR_MODE  int = 0755
-	FILE_MODE int = 0755
+	DIR_MODE int = 0755
 
 	// FS errors
 	DIR_EXISTS          string = "Directory exists"
@@ -20,16 +19,25 @@ const (
 	TEMPLATE_NOT_FOUND  string = "No template found"
 )
 
+type ProjectConfig struct {
+	Name string
+	TemplateName string
+	LocalTemplatesDirs []string
+}
+
 type Project struct {
 	fs       afero.Fs
 	Config   ProjectConfig
-	Template Template
+	template projectTemplate
 }
 
-func NewProject(config ProjectConfig) *Project {
+func NewProject(projectConfig ProjectConfig, templateConfig TemplateConfig) *Project {
 	return &Project{
 		fs:     afero.NewOsFs(),
-		Config: config,
+		Config: projectConfig,
+		template: projectTemplate{
+			config: templateConfig,
+		},
 	}
 }
 
@@ -52,9 +60,15 @@ func (self *Project) Create() error {
 		return err
 	}
 
+	// TODO execute on create commands
+	fmt.Printf("Executing on create commands\n")
+
 	// Copying template content
 	fmt.Printf("Copying template\n")
-	self.copyDir(self.Template.Path, self.Config.Name)
+	self.copyDir(self.template.path, self.Config.Name)
+
+	// TODO execute on mount commands
+	fmt.Printf("Executing on mount commands\n")
 
 	fmt.Printf("Project craeted succesfully\n")
 
@@ -67,7 +81,13 @@ func (self *Project) loadTemplate() error {
 		err = fmt.Errorf(TEMPLATE_NOT_PASSED)
 	}
 
-	self.Template, err = self.searchLocalTemplate(self.Config.LocalTemplatesDirs, self.Config.TemplateName)
+	// Searching template locally and loading data
+	self.template, err = self.searchLocalTemplate(self.Config.LocalTemplatesDirs, self.Config.TemplateName)
+
+	self.getCommandsFromConfigFile()
+
+	// Loading commands from config file
+	self.template.loadCommands()
 
 	if err != nil {
 		err = fmt.Errorf(TEMPLATE_NOT_FOUND)
@@ -77,11 +97,12 @@ func (self *Project) loadTemplate() error {
 }
 
 // Search template in a local folder and return it
-func (self *Project) searchLocalTemplate(directories []string, templateName string) (Template, error) {
-	var template Template
+func (self *Project) searchLocalTemplate(directories []string, templateName string) (projectTemplate, error) {
+	var template projectTemplate
 	var templateFound bool
 
 	for _, dir := range directories {
+		// Reading templates directory
 		fileInfoList, err := afero.ReadDir(self.fs, dir)
 		if err != nil {
 			log.Panicf("Cannot open templates dir: %s\n", err)
@@ -92,14 +113,25 @@ func (self *Project) searchLocalTemplate(directories []string, templateName stri
 				continue
 			}
 
+			if fileInfo.Name() == "owl_config.toml" {
+				// TODO load template config file
+			}
+
 			// checking if folder has the same name as template
 			if fileInfo.Name() == self.Config.TemplateName {
-				template.Content, err = afero.ReadDir(self.fs, path.Join(dir, fileInfo.Name()))
+				// Reading folder content
+				template.content, err = afero.ReadDir(self.fs, path.Join(dir, fileInfo.Name()))
 				if err != nil {
 					log.Panicf("Cannot open templates dir: %s\n", err)
 				}
-				template.Path = path.Join(dir, fileInfo.Name())
+				// saving template path
+				template.path = path.Join(dir, fileInfo.Name())
 				templateFound = true
+
+				// setting config to viper using template config fields
+				template.viper.AddConfigPath(template.path)
+				template.viper.SetConfigName(template.config.ConfigName)
+				template.viper.SetConfigType(template.config.ConfigType)
 			}
 		}
 	}
@@ -107,7 +139,8 @@ func (self *Project) searchLocalTemplate(directories []string, templateName stri
 	if templateFound {
 		return template, nil
 	}
-	return Template{}, fmt.Errorf(TEMPLATE_NOT_FOUND)
+
+	return projectTemplate{}, fmt.Errorf(TEMPLATE_NOT_FOUND)
 }
 
 // Search template in a repo and return it
@@ -156,7 +189,7 @@ func (self *Project) copyDir(targetDirPath string, destination string) {
 		// Copying only files for the current directory
 		destinationFilePath := path.Join(destination, fileInfo.Name())
 		// Copying file using the same permissions
-		destinationFile, err := self.fs.OpenFile(destinationFilePath, os.O_RDWR | os.O_CREATE, fileInfo.Mode())
+		destinationFile, err := self.fs.OpenFile(destinationFilePath, os.O_RDWR|os.O_CREATE, fileInfo.Mode())
 		if err != nil {
 			log.Panicf("Error while creating %s file: %s\n", destinationFilePath, err.Error())
 		}
@@ -168,8 +201,6 @@ func (self *Project) copyDir(targetDirPath string, destination string) {
 		if err != nil {
 			log.Panicf("Error while writing to file %s: %s", destinationFile.Name(), err)
 		}
-
-		fmt.Printf("File '%s' copyied succesfully\n", targetfilePath)
 
 		// Closing now to avoid memory overflow
 		destinationFile.Close()
@@ -190,4 +221,11 @@ func (self *Project) copyDir(targetDirPath string, destination string) {
 			self.copyDir(targetDirPath, destinationDirPath)
 		}
 	}
+}
+
+func (self *Project) getCommandsFromConfigFile() ([2]templateCommands, error) {
+	return [2]templateCommands{
+		{},
+		{},
+	}, nil
 }
