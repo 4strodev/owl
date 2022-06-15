@@ -6,7 +6,10 @@ import (
 	"os"
 	"path"
 
+	"github.com/4strodev/owl/template"
+
 	"github.com/spf13/afero"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -19,24 +22,31 @@ const (
 	TEMPLATE_NOT_FOUND  string = "No template found"
 )
 
+// Contains the project's config
 type ProjectConfig struct {
-	Name string
-	TemplateName string
+	Name               string
+	TemplateName       string
 	LocalTemplatesDirs []string
 }
 
+// Contains the config the fs api and template info
+// fs: It manage all fs operations copy files and directories, read files, etc.
+// Config: It saves project config: project name, templates directories, template name...
+// template: saves the template struct that manage template operations: read template content,
+// load and run template scripts.
 type Project struct {
 	fs       afero.Fs
 	Config   ProjectConfig
-	template projectTemplate
+	template template.ProjectTemplate
 }
 
-func NewProject(projectConfig ProjectConfig, templateConfig TemplateConfig) *Project {
+// Generates a new projects giving the project config and and a template config
+func NewProject(projectConfig ProjectConfig, templateConfig template.TemplateConfig) *Project {
 	return &Project{
 		fs:     afero.NewOsFs(),
 		Config: projectConfig,
-		template: projectTemplate{
-			config: templateConfig,
+		template: template.ProjectTemplate{
+			Config: templateConfig,
 		},
 	}
 }
@@ -60,21 +70,22 @@ func (self *Project) Create() error {
 		return err
 	}
 
-	// TODO execute on create commands
-	fmt.Printf("Executing on create commands\n")
+	fmt.Printf("Executing on create scripts\n")
+	self.template.RunOnCreateScripts()
 
 	// Copying template content
 	fmt.Printf("Copying template\n")
-	self.copyDir(self.template.path, self.Config.Name)
+	self.copyDir(self.template.Config.Path, self.Config.Name)
 
-	// TODO execute on mount commands
-	fmt.Printf("Executing on mount commands\n")
+	fmt.Printf("Executing on mount scripts\n")
+	self.template.RunOnMountScripts()
 
 	fmt.Printf("Project craeted succesfully\n")
 
 	return nil
 }
 
+// Check if template is found and loads its content
 func (self *Project) loadTemplate() error {
 	var err error
 	if self.Config.TemplateName == "" {
@@ -82,23 +93,19 @@ func (self *Project) loadTemplate() error {
 	}
 
 	// Searching template locally and loading data
-	self.template, err = self.searchLocalTemplate(self.Config.LocalTemplatesDirs, self.Config.TemplateName)
-
-	self.getCommandsFromConfigFile()
+	err = self.searchLocalTemplate(self.Config.LocalTemplatesDirs, self.Config.TemplateName)
+	if err != nil {
+		return fmt.Errorf(TEMPLATE_NOT_FOUND)
+	}
 
 	// Loading commands from config file
-	self.template.loadCommands()
-
-	if err != nil {
-		err = fmt.Errorf(TEMPLATE_NOT_FOUND)
-	}
+	err = self.template.LoadScripts()
 
 	return err
 }
 
 // Search template in a local folder and return it
-func (self *Project) searchLocalTemplate(directories []string, templateName string) (projectTemplate, error) {
-	var template projectTemplate
+func (self *Project) searchLocalTemplate(directories []string, templateName string) error {
 	var templateFound bool
 
 	for _, dir := range directories {
@@ -113,34 +120,31 @@ func (self *Project) searchLocalTemplate(directories []string, templateName stri
 				continue
 			}
 
-			if fileInfo.Name() == "owl_config.toml" {
-				// TODO load template config file
-			}
-
 			// checking if folder has the same name as template
 			if fileInfo.Name() == self.Config.TemplateName {
 				// Reading folder content
-				template.content, err = afero.ReadDir(self.fs, path.Join(dir, fileInfo.Name()))
+				self.template.Content, err = afero.ReadDir(self.fs, path.Join(dir, fileInfo.Name()))
 				if err != nil {
 					log.Panicf("Cannot open templates dir: %s\n", err)
 				}
 				// saving template path
-				template.path = path.Join(dir, fileInfo.Name())
+				self.template.Config.Path = path.Join(dir, fileInfo.Name())
 				templateFound = true
 
 				// setting config to viper using template config fields
-				template.viper.AddConfigPath(template.path)
-				template.viper.SetConfigName(template.config.ConfigName)
-				template.viper.SetConfigType(template.config.ConfigType)
+				self.template.Viper = viper.New()
+				self.template.Viper.AddConfigPath(self.template.Config.Path)
+				self.template.Viper.SetConfigName(self.template.Config.ConfigName)
+				self.template.Viper.SetConfigType(self.template.Config.ConfigType)
 			}
 		}
 	}
 
 	if templateFound {
-		return template, nil
+		return nil
 	}
 
-	return projectTemplate{}, fmt.Errorf(TEMPLATE_NOT_FOUND)
+	return fmt.Errorf(TEMPLATE_NOT_FOUND)
 }
 
 // Search template in a repo and return it
@@ -168,6 +172,7 @@ func (self *Project) CreateRootFolder(path string) error {
 	return nil
 }
 
+// Copy a target directory to a destination directory
 func (self *Project) copyDir(targetDirPath string, destination string) {
 	var err error
 	var pendingDirs []os.FileInfo
@@ -208,7 +213,7 @@ func (self *Project) copyDir(targetDirPath string, destination string) {
 
 	// If there are pending directories
 	if len(pendingDirs) > 0 {
-		// Copy each directory
+		// Copy each subdirectory
 		for _, dir := range pendingDirs {
 			targetDirPath := path.Join(targetDirPath, dir.Name())
 			destinationDirPath := path.Join(destination, dir.Name())
@@ -221,11 +226,4 @@ func (self *Project) copyDir(targetDirPath string, destination string) {
 			self.copyDir(targetDirPath, destinationDirPath)
 		}
 	}
-}
-
-func (self *Project) getCommandsFromConfigFile() ([2]templateCommands, error) {
-	return [2]templateCommands{
-		{},
-		{},
-	}, nil
 }
