@@ -22,14 +22,14 @@ type ProjectTemplate struct {
 func (self *ProjectTemplate) LoadScripts() error {
 	var err error
 	err = self.Viper.ReadInConfig()
-	onCreateScripts := map[string]scriptsMap{
+	onCreateScriptsMap := map[string]scriptsMap{
 		"universal": {},
 		"linux":     {},
 		"windows":   {},
 		"macos":     {},
 	}
 
-	onMountScripts := map[string]scriptsMap{
+	onMountScriptsMap := map[string]scriptsMap{
 		"universal": {},
 		"linux":     {},
 		"windows":   {},
@@ -37,9 +37,9 @@ func (self *ProjectTemplate) LoadScripts() error {
 	}
 
 	// TODO this code is bullshit
-	for key := range onCreateScripts {
-		onCreateScripts[key], err = self.parseScripts(
-			self.Viper.GetStringMapStringSlice(fmt.Sprintf("scripts.oncreate.%s",key)),
+	for key := range onCreateScriptsMap {
+		onCreateScriptsMap[key], err = self.parseScripts(
+			self.Viper.GetStringMapStringSlice(fmt.Sprintf("oncreate.%s", key)),
 			self.Config.Context,
 		)
 		if err != nil {
@@ -47,9 +47,9 @@ func (self *ProjectTemplate) LoadScripts() error {
 		}
 	}
 
-	for key := range onMountScripts {
-		onMountScripts[key], err = self.parseScripts(
-			self.Viper.GetStringMapStringSlice(fmt.Sprintf("scripts.onmount.%s",key)),
+	for key := range onMountScriptsMap {
+		onMountScriptsMap[key], err = self.parseScripts(
+			self.Viper.GetStringMapStringSlice(fmt.Sprintf("onmount.%s", key)),
 			self.Config.Context,
 		)
 		if err != nil {
@@ -57,8 +57,9 @@ func (self *ProjectTemplate) LoadScripts() error {
 		}
 	}
 
-	fmt.Printf("On create scripts: %v\n", onCreateScripts)
-	fmt.Printf("On mount scripts: %v\n", onMountScripts)
+
+	self.onCreateScripts.Unmarshal(onCreateScriptsMap)
+	self.onMountScripts.Unmarshal(onMountScriptsMap)
 
 	return nil
 }
@@ -95,13 +96,22 @@ func (self *ProjectTemplate) parseScripts(rawScripts scriptsMap, context map[str
 // Execute on create scripts
 func (self *ProjectTemplate) RunOnCreateScripts() error {
 	var err error
-	// TODO execute loaded commands
+
+	err = self.onCreateScripts.run()
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		os.Exit(1)
+	}
 	return err
 }
 
 // Execute on mount scripts
 func (self *ProjectTemplate) RunOnMountScripts() error {
 	var err error
-	// TODO execute loaded commands
+	err = self.onMountScripts.run()
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		os.Exit(1)
+	}
 	return err
 }

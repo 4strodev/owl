@@ -25,8 +25,10 @@ const (
 // Contains the project's config
 type ProjectConfig struct {
 	Name               string
+	fullPath           string
 	TemplateName       string
 	LocalTemplatesDirs []string
+	VerboseOutput      bool
 }
 
 // Contains the config the fs api and template info
@@ -56,55 +58,75 @@ func (self *Project) Create() error {
 	// Getting folder name
 	var err error
 
-	// Loading template information if exist
-	fmt.Printf("Searching template '%s'\n", self.Config.TemplateName)
+	// Loading template information and scripts if exist
 	err = self.loadTemplate()
 	if err != nil {
 		return err
 	}
 
+	// Getting working directory for scripts
+	WorkingDirectory, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	// Getting full path for the directory of the project
+	self.Config.fullPath = path.Join(WorkingDirectory, self.Config.Name)
+
 	// Creating application folder
-	fmt.Printf("Creating folder '%s'\n", self.Config.Name)
-	err = self.CreateRootFolder(self.Config.Name)
+	err = self.CreateRootFolder(self.Config.fullPath)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Executing on create scripts\n")
+	if self.Config.VerboseOutput {
+		fmt.Printf("Running on create scripts")
+	}
+	os.Chdir(self.Config.fullPath)
 	self.template.RunOnCreateScripts()
 
 	// Copying template content
-	fmt.Printf("Copying template\n")
-	self.copyDir(self.template.Config.Path, self.Config.Name)
+	self.copyDir(self.template.Config.Path, self.Config.fullPath)
 
-	fmt.Printf("Executing on mount scripts\n")
+	if self.Config.VerboseOutput {
+		fmt.Printf("Running on mount scripts")
+	}
+	os.Chdir(self.Config.fullPath)
 	self.template.RunOnMountScripts()
 
-	fmt.Printf("Project craeted succesfully\n")
-
+	fmt.Printf("Project created succesfully\n")
 	return nil
 }
 
 // Check if template is found and loads its content
 func (self *Project) loadTemplate() error {
 	var err error
+	if self.Config.VerboseOutput {
+		fmt.Printf("Loading template\n")
+	}
 	if self.Config.TemplateName == "" {
 		err = fmt.Errorf(TEMPLATE_NOT_PASSED)
 	}
 
+	if self.Config.VerboseOutput {
+		fmt.Printf("Searching template %s locally\n", self.Config.TemplateName)
+	}
 	// Searching template locally and loading data
 	err = self.searchLocalTemplate(self.Config.LocalTemplatesDirs, self.Config.TemplateName)
 	if err != nil {
 		return fmt.Errorf(TEMPLATE_NOT_FOUND)
 	}
 
+	if self.Config.VerboseOutput {
+		fmt.Printf("Loading scripts\n")
+	}
 	// Loading commands from config file
 	err = self.template.LoadScripts()
 
 	return err
 }
 
-// Search template in a local folder and return it
+// Search template in a local folder and load it's content
 func (self *Project) searchLocalTemplate(directories []string, templateName string) error {
 	var templateFound bool
 
@@ -154,6 +176,7 @@ func (self *Project) searchRemoteTemplate(template string) bool {
 
 // Create the root folder of the project
 func (self *Project) CreateRootFolder(path string) error {
+
 	// Create project folder if not exists
 	exists, err := afero.DirExists(self.fs, path)
 	if err != nil {
@@ -164,6 +187,9 @@ func (self *Project) CreateRootFolder(path string) error {
 		return fmt.Errorf(DIR_EXISTS)
 	}
 
+	if self.Config.VerboseOutput {
+		fmt.Printf("Creating project folder\n")
+	}
 	err = self.fs.Mkdir(path, os.FileMode(DIR_MODE))
 	if err != nil {
 		log.Panicf("Cannot create directory project due this error: %s", err)
@@ -172,7 +198,7 @@ func (self *Project) CreateRootFolder(path string) error {
 	return nil
 }
 
-// Copy a target directory to a destination directory
+// Copy a target directory to a destination directory recursively
 func (self *Project) copyDir(targetDirPath string, destination string) {
 	var err error
 	var pendingDirs []os.FileInfo
