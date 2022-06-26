@@ -14,7 +14,7 @@ There is no warranty if you have an error or bug publish an issue or make a pull
 Owl is a template based library, what it means? It copy a template and then run init scripts that resides in
 that template. For example in a go project you have start files but the project name have to be set with a command.
 
-- [x] ~Copy a local template~
-- [x] ~Run preconfigured template scripts~
+- [x] Copy a local template
+- [x] Run preconfigured template scripts
 - [ ] Ignore specific files with .owlignore file
 - [ ] Copy a remote template
