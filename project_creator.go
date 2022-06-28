@@ -80,7 +80,7 @@ func (self *Project) Create() error {
 	}
 
 	if self.Config.VerboseOutput {
-		fmt.Printf("Running on create scripts")
+		fmt.Printf("Running on create scripts\n")
 	}
 	os.Chdir(self.Config.fullPath)
 	self.template.RunOnCreateScripts()
@@ -89,7 +89,7 @@ func (self *Project) Create() error {
 	self.copyDir(self.template.Config.Path, self.Config.fullPath)
 
 	if self.Config.VerboseOutput {
-		fmt.Printf("Running on mount scripts")
+		fmt.Printf("Running on mount scripts\n")
 	}
 	os.Chdir(self.Config.fullPath)
 	self.template.RunOnMountScripts()
@@ -201,7 +201,7 @@ func (self *Project) CreateRootFolder(path string) error {
 // Copy a target directory to a destination directory recursively
 func (self *Project) copyDir(targetDirPath string, destination string) {
 	var err error
-	var pendingDirs []os.FileInfo
+	var pendingDirs []os.FileInfo // pendingDirs it's going to save the subdirectories paths
 
 	// Reading directory content
 	targetContent, err := afero.ReadDir(self.fs, targetDirPath)
@@ -210,7 +210,12 @@ func (self *Project) copyDir(targetDirPath string, destination string) {
 	}
 
 	for _, fileInfo := range targetContent {
-		// Path is the directory dirPath that contains the files
+		// Don't copy the config file
+		if fileInfo.Name() == "owl_config.toml" {
+			continue
+		}
+
+		// If it's a dir add to pending dirs stack to copy their content
 		if fileInfo.IsDir() {
 			// Adding dir to pending directories
 			pendingDirs = append(pendingDirs, fileInfo)
