@@ -3,6 +3,13 @@ For the moment you have to create a `scripts` section. Then under the `scripts`
 you have to create `onmount` or `oncreate` section. Then specify the OS that the
 script is going to be executed. If you want to execute the script in every OS use universal instead.
 
+## oncreate
+oncreate scripts are executed when the template root folder is created but before the files are copied.
+
+## onmount
+onmount scripts are executed when the template was copied.
+
+## configuration examples
 `owl_config.toml` config example
 ```toml
 [scripts]
