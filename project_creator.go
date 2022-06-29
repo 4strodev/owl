@@ -20,6 +20,8 @@ const (
 	DIR_EXISTS          string = "Directory exists"
 	TEMPLATE_NOT_PASSED string = "No template passed"
 	TEMPLATE_NOT_FOUND  string = "No template found"
+
+	CONFIG_FILE_NAME string = "owl_config"
 )
 
 // Contains the project's config
@@ -156,7 +158,7 @@ func (self *Project) searchLocalTemplate(directories []string, templateName stri
 				// setting config to viper using template config fields
 				self.template.Viper = viper.New()
 				self.template.Viper.AddConfigPath(self.template.Config.Path)
-				self.template.Viper.SetConfigName(self.template.Config.ConfigName)
+				self.template.Viper.SetConfigName(CONFIG_FILE_NAME)
 				self.template.Viper.SetConfigType(self.template.Config.ConfigType)
 			}
 		}

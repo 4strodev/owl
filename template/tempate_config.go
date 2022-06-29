@@ -11,6 +11,5 @@ const (
 type TemplateConfig struct {
 	Path       string
 	ConfigType string
-	ConfigName string
 	Context    map[string]any
 }
