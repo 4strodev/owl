@@ -92,7 +92,7 @@ func main() {
 See `example_template/go-cli` to know how to create a template.
 
 ## TODO
-- [ ] Doc page (intended to do with hugo and github pages)
+- [ ] Doc page (with hugo and github pages)
 
 ## Thanks to
 [@spf13](https://github.com/spf13)
