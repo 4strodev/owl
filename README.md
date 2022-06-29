@@ -14,6 +14,7 @@ There is no warranty if you have an error or bug publish an issue or make a pull
 Owl is a template based library, what it means? It copy a template and then run init scripts that resides in
 that template.
 
+- [x] Config file can be writed in json, yaml, toml thanks to [Viper](https://github.com/spf13/viper)
 - [x] Copy a local template
 - [x] Run preconfigured template scripts
 - [ ] Ignore specific files with .owlignore file
@@ -35,6 +36,7 @@ import (
 	"github.com/4strodev/owl/template"
 )
 
+// This variables save the project configuration
 var (
 	projectName     string
 	moduleName      string
@@ -59,12 +61,13 @@ func main() {
 			Name:         projectName,
 			TemplateName: projectTemplate,
 			LocalTemplatesDirs: []string{
+                // Searching templates in ~/Templates folder
 				path.Join(os.Getenv("HOME"), "Templates"),
 			},
 			VerboseOutput: verboseOutput,
 		}, template.TemplateConfig{
-			ConfigName: "owl_config",
 			ConfigType: "toml",
+            // Can send variables to the template this is useful when making scripts
 			Context: map[string]any{
 				"ModuleName": moduleName,
 			},
@@ -86,7 +89,10 @@ func main() {
 }
 ```
 
-See `example_template` to know how to create a template.
+See `example_template/go-cli` to know how to create a template.
 
 ## TODO
-- [ ] Doc page (intended to do with hugo and use github pages)
+- [ ] Doc page (intended to do with hugo and github pages)
+
+## Thanks to
+[@spf13](https://github.com/spf13)
