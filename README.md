@@ -89,7 +89,7 @@ func main() {
 }
 ```
 
-See `example_template/go-cli` to know how to create a template.
+See [`example_template/go-cli`](https://github.com/4strodev/owl/tree/main/example_template/go-cli) to know how to create a template.
 
 ## TODO
 - [ ] Doc page (with hugo and github pages)
