@@ -1,14 +1,12 @@
-# scripts section
 [scripts]
-#[scripts.oncreate]
-## universal = {}
-## linux = {}
-## macos = {}
-## windows = {}
+
+[scripts.oncreate]
+[scripts.oncreate.universal]
+init_git = ["git init"]
+
 [scripts.onmount]
 [scripts.onmount.universal]
 init_package = [
     "go mod init {{ .ModuleName }}",
     "go mod tidy"
 ]
-init_git = ["git init"]
