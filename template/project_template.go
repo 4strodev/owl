@@ -39,7 +39,7 @@ func (self *ProjectTemplate) LoadScripts() error {
 	// TODO this code is bullshit
 	for key := range onCreateScriptsMap {
 		onCreateScriptsMap[key], err = self.parseScripts(
-			self.Viper.GetStringMapStringSlice(fmt.Sprintf("oncreate.%s", key)),
+			self.Viper.GetStringMapStringSlice(fmt.Sprintf("scripts.oncreate.%s", key)),
 			self.Config.Context,
 		)
 		if err != nil {
@@ -49,7 +49,7 @@ func (self *ProjectTemplate) LoadScripts() error {
 
 	for key := range onMountScriptsMap {
 		onMountScriptsMap[key], err = self.parseScripts(
-			self.Viper.GetStringMapStringSlice(fmt.Sprintf("onmount.%s", key)),
+			self.Viper.GetStringMapStringSlice(fmt.Sprintf("scripts.onmount.%s", key)),
 			self.Config.Context,
 		)
 		if err != nil {
