@@ -20,6 +20,11 @@ that template.
 - [ ] Ignore specific files with .owlignore file
 - [ ] Copy a remote template
 
+## Installation
+```shell
+go get -u github.com/4strodev/owl@latest
+```
+
 ## Example of use
 
 Go main file
