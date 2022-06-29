@@ -89,4 +89,4 @@ func main() {
 See `example_template` to know how to create a template.
 
 ## TODO
-Doc page (intended to do with hugo and use github pages)
+- [ ] Doc page (intended to do with hugo and use github pages)
