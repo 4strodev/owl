@@ -42,4 +42,4 @@ init_package = ["go mod init {{ .ModuleName }}"]
 ```
 
 ## Variables
-When you create template config you can pass a map filled with variables that can be used by the scripts.
+When you create template, you can pass a map filled with variables that can be used by the scripts.
