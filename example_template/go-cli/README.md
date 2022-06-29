@@ -20,10 +20,7 @@ init_git = ["git init"]
 
 [scripts.onmount]
 [scripts.onmount.universal]
-init_package = [
-    "go mod init {{ .ModuleName }}",
-    "go mod tidy"
-]
+init_package = ["go mod init {{ .ModuleName }}"]
 ```
 
 `owl_config.json` config example
@@ -37,7 +34,7 @@ init_package = [
         },
         "oncreate": {
             "universal": {
-                "init_package": ["go mod init {{ .ModuleName }}", "go mod tidy"]
+                "init_package": ["go mod init {{ .ModuleName }}"]
             }
         }
     }
