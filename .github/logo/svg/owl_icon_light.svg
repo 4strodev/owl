@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="512"
+   height="512"
+   viewBox="0 0 135.46666 135.46667"
+   version="1.1"
+   id="svg339"
+   inkscape:version="1.2 (dc2aedaf03, 2022-05-15)"
+   sodipodi:docname="owl_icon_light.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview341"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="0.76791526"
+     inkscape:cx="291.04774"
+     inkscape:cy="459.03502"
+     inkscape:window-width="1920"
+     inkscape:window-height="1012"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs336">
+    <rect
+       x="20.737188"
+       y="526.72809"
+       width="705.59003"
+       height="187.27815"
+       id="rect10390" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g10698"
+       transform="translate(-37.266668,21.983691)"
+       inkscape:export-filename="owl_icon_light.png"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96">
+      <g
+         id="g10686">
+        <path
+           id="path7920"
+           style="fill:none;stroke:#000000;stroke-width:2.16904;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+           d="m 105,83.128006 c 75.14893,-4.17146 42.35797,-49.438612 61.96407,-74.756757 M 105,83.128036 C 29.851072,78.956566 62.642037,33.68942 43.035932,8.371274 M 166.96407,8.371249 A 64.443128,19.541961 0 0 1 104.99999,22.545116 64.443128,19.541961 0 0 1 43.035932,8.371275" />
+        <path
+           id="path9378"
+           style="fill:none;stroke:#000000;stroke-width:2.16904;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+           d="M 116.37928,58.766036 105,75.712496 M 93.620727,58.766036 105,75.712496" />
+      </g>
+      <g
+         id="g10682">
+        <g
+           id="g10670">
+          <circle
+             style="fill:#ffe680;fill-rule:evenodd;stroke:#000000;stroke-width:3.03665;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+             id="path7123"
+             cx="80.873566"
+             cy="44.622208"
+             r="19.040434" />
+          <circle
+             style="fill:#000000;fill-rule:evenodd;stroke:none;stroke-width:2.29293;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+             id="path7127"
+             cx="80.873566"
+             cy="44.622208"
+             r="7.4736085" />
+        </g>
+        <g
+           id="g10674">
+          <circle
+             style="fill:#ffe680;fill-rule:evenodd;stroke:#000000;stroke-width:3.03665;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+             id="circle7165"
+             cx="129.12643"
+             cy="44.622208"
+             r="19.040434" />
+          <circle
+             style="fill:#000000;fill-rule:evenodd;stroke:none;stroke-width:2.29293;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+             id="circle7167"
+             cx="129.12643"
+             cy="44.622208"
+             r="7.4736085" />
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
