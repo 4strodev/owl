@@ -6,7 +6,7 @@ Owl is a Go library to create project generators for any framework or language. 
 There is no warranty if you have an error or bug publish an issue or make a pull request to improve this library.
 
 <div align="center">
-    <img src="./.github/logo/owl_logo_light.png" alt="Owl logo">
+    <img src="./.github/logo/png/owl_logo_light.png" alt="Owl logo">
 </div>
 
 ## Features
@@ -97,7 +97,7 @@ func main() {
 See [`example_template/go-cli`](https://github.com/4strodev/owl/tree/main/example_template/go-cli) to know how to create a template.
 
 ## TODO
-- [ ] Doc page (with hugo and github pages)
+- [ ] Doc page (in progress)
 
 ## Thanks to
 [@spf13](https://github.com/spf13)
