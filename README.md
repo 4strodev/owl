@@ -17,8 +17,8 @@ that template.
 - [x] Config file can be writed in json, yaml, toml thanks to [Viper](https://github.com/spf13/viper)
 - [x] Copy a local template
 - [x] Run preconfigured template scripts
+- [x] Copy a remote template
 - [ ] Ignore specific files with .owlignore file
-- [ ] Copy a remote template
 
 ## Installation
 ```shell
