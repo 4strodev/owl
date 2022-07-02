@@ -22,6 +22,9 @@ type ProjectTemplate struct {
 func (self *ProjectTemplate) LoadScripts() error {
 	var err error
 	err = self.Viper.ReadInConfig()
+	if err != nil {
+		return err
+	}
 	onCreateScriptsMap := map[string]scriptsMap{
 		"universal": {},
 		"linux":     {},

@@ -1,10 +1,13 @@
 package owl
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path"
+	"regexp"
 
 	"github.com/4strodev/owl/template"
 
@@ -31,6 +34,8 @@ type ProjectConfig struct {
 	TemplateName       string
 	LocalTemplatesDirs []string
 	VerboseOutput      bool
+	TempDir            string
+	ignoreGlobs        []string
 }
 
 // Contains the config the fs api and template info
@@ -46,6 +51,10 @@ type Project struct {
 
 // Generates a new projects giving the project config and and a template config
 func NewProject(projectConfig ProjectConfig, templateConfig template.TemplateConfig) *Project {
+	if projectConfig.TempDir == "" {
+		projectConfig.TempDir = "/tmp/owl"
+	}
+
 	return &Project{
 		fs:     afero.NewOsFs(),
 		Config: projectConfig,
@@ -59,6 +68,14 @@ func NewProject(projectConfig ProjectConfig, templateConfig template.TemplateCon
 func (self *Project) Create() error {
 	// Getting folder name
 	var err error
+
+	// If tempdir is not created create them
+	if _, err = self.fs.Stat(self.Config.TempDir); os.IsNotExist(err) {
+		err = self.fs.Mkdir(self.Config.TempDir, os.FileMode(DIR_MODE))
+		if err != nil {
+			log.Panic(err)
+		}
+	}
 
 	// Loading template information and scripts if exist
 	err = self.loadTemplate()
@@ -115,8 +132,19 @@ func (self *Project) loadTemplate() error {
 	}
 	// Searching template locally and loading data
 	err = self.searchLocalTemplate(self.Config.LocalTemplatesDirs, self.Config.TemplateName)
+	if err == nil {
+		if self.Config.VerboseOutput {
+			fmt.Printf("Loading scripts\n")
+		}
+		// Loading commands from config file
+		err = self.template.LoadScripts()
+
+		return err
+	}
+
+	err = self.searchRemoteTemplate(self.Config.TemplateName)
 	if err != nil {
-		return fmt.Errorf(TEMPLATE_NOT_FOUND)
+		return err
 	}
 
 	if self.Config.VerboseOutput {
@@ -132,36 +160,12 @@ func (self *Project) loadTemplate() error {
 func (self *Project) searchLocalTemplate(directories []string, templateName string) error {
 	var templateFound bool
 
+	// Searching template on temporary dir
+	// TODO recursive search
+
+	// Searching template in provided folders
 	for _, dir := range directories {
-		// Reading templates directory
-		fileInfoList, err := afero.ReadDir(self.fs, dir)
-		if err != nil {
-			log.Panicf("Cannot open templates dir: %s\n", err)
-		}
-
-		for _, fileInfo := range fileInfoList {
-			if !fileInfo.IsDir() {
-				continue
-			}
-
-			// checking if folder has the same name as template
-			if fileInfo.Name() == self.Config.TemplateName {
-				// Reading folder content
-				self.template.Content, err = afero.ReadDir(self.fs, path.Join(dir, fileInfo.Name()))
-				if err != nil {
-					log.Panicf("Cannot open templates dir: %s\n", err)
-				}
-				// saving template path
-				self.template.Config.Path = path.Join(dir, fileInfo.Name())
-				templateFound = true
-
-				// setting config to viper using template config fields
-				self.template.Viper = viper.New()
-				self.template.Viper.AddConfigPath(self.template.Config.Path)
-				self.template.Viper.SetConfigName(CONFIG_FILE_NAME)
-				self.template.Viper.SetConfigType(self.template.Config.ConfigType)
-			}
-		}
+		templateFound = self.searchTemplateOnDir(dir, templateName)
 	}
 
 	if templateFound {
@@ -171,13 +175,100 @@ func (self *Project) searchLocalTemplate(directories []string, templateName stri
 	return fmt.Errorf(TEMPLATE_NOT_FOUND)
 }
 
-// Search template in a repo and return it
-func (self *Project) searchRemoteTemplate(template string) bool {
-	return false
+// Check if template was downloaded previously
+// download the template if does not exist
+func (self *Project) searchRemoteTemplate(templateRepo string) error {
+	var err error
+	var stderr *bytes.Buffer = new(bytes.Buffer)
+	var templateFound bool
+
+	// Removing https://
+	regexTemplateParser := regexp.MustCompile("https?://")
+	parsedTemplateRepo := regexTemplateParser.ReplaceAllString(templateRepo, "")
+	templateName := path.Base(parsedTemplateRepo)
+
+	// Getting template parent dir path and the destination of the cloned template
+	templateParentPath := path.Join(self.Config.TempDir, path.Dir(parsedTemplateRepo))
+	cloneDestination := path.Join(self.Config.TempDir, parsedTemplateRepo)
+
+	// Searching template on tmp dir
+	templateFound = self.searchTemplateOnDir(templateParentPath, templateName)
+	if templateFound {
+		return err
+	}
+
+	// Creating command to clone repo
+	cloneTemplate := exec.Command("git", "clone", templateRepo, cloneDestination)
+	cloneTemplate.Stdout = os.Stdout
+	// Capturing errors in a buffer
+	// Because the error returned by commands
+	// is a status code and not error message
+	cloneTemplate.Stderr = stderr
+
+	// Executing command
+	if self.Config.VerboseOutput {
+		fmt.Printf("Cloning %s\n", templateRepo)
+	}
+	err = cloneTemplate.Run()
+
+	// If an error ocurred return the captured error message
+	if err != nil {
+		return fmt.Errorf(stderr.String())
+	}
+
+	// Search again the template on tmp dir
+	templateFound = self.searchTemplateOnDir(templateParentPath, templateName)
+	if !templateFound {
+		return fmt.Errorf(TEMPLATE_NOT_FOUND)
+	}
+
+	return err
+}
+
+// Search a template
+// used in searchLocalTemplate and searchRemoteTemplate
+func (self *Project) searchTemplateOnDir(dir string, templateName string) bool {
+	var templateFound bool
+
+	// Reading templates directory
+	fileInfoList, err := afero.ReadDir(self.fs, dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+		//log.Panic(err)
+	}
+
+	for _, fileInfo := range fileInfoList {
+		if !fileInfo.IsDir() {
+			continue
+		}
+
+		// checking if folder has the same name as template
+		if fileInfo.Name() == templateName {
+			// Reading folder content
+			self.template.Content, err = afero.ReadDir(self.fs, path.Join(dir, fileInfo.Name()))
+			if err != nil {
+				log.Panicf("Cannot open templates dir: %s\n", err)
+			}
+			// saving template path
+			self.template.Config.Path = path.Join(dir, fileInfo.Name())
+			templateFound = true
+
+			// setting config to viper using template config fields
+			self.template.Viper = viper.New()
+			self.template.Viper.AddConfigPath(self.template.Config.Path)
+			self.template.Viper.SetConfigName(CONFIG_FILE_NAME)
+			self.template.Viper.SetConfigType(self.template.Config.ConfigType)
+		}
+	}
+
+	return templateFound
 }
 
 // Create the root folder of the project
 func (self *Project) CreateRootFolder(path string) error {
+	var err error
 
 	// Create project folder if not exists
 	exists, err := afero.DirExists(self.fs, path)
@@ -213,6 +304,15 @@ func (self *Project) copyDir(targetDirPath string, destination string) {
 
 	for _, fileInfo := range targetContent {
 		// Don't copy the config file
+		if fileInfo.Name() == ".owlignore" {
+			//self.fs.Open(path.Join(targetDirPath, fileInfo.Name()))
+			continue
+		}
+
+		if fileInfo.Name() == ".git" {
+			continue
+		}
+
 		if fileInfo.Name() == "owl_config.toml" {
 			continue
 		}
