@@ -198,7 +198,7 @@ func (self *Project) searchRemoteTemplate(templateRepo string) error {
 	}
 
 	// Creating command to clone repo
-	cloneTemplate := exec.Command("git", "clone", templateRepo, cloneDestination)
+	cloneTemplate := exec.Command("git", "clone", fmt.Sprintf("https://%s", parsedTemplateRepo), cloneDestination)
 	cloneTemplate.Stdout = os.Stdout
 	// Capturing errors in a buffer
 	// Because the error returned by commands
@@ -251,15 +251,20 @@ func (self *Project) searchTemplateOnDir(dir string, templateName string) bool {
 			if err != nil {
 				log.Panicf("Cannot open templates dir: %s\n", err)
 			}
-			// saving template path
-			self.template.Config.Path = path.Join(dir, fileInfo.Name())
-			templateFound = true
 
-			// setting config to viper using template config fields
-			self.template.Viper = viper.New()
-			self.template.Viper.AddConfigPath(self.template.Config.Path)
-			self.template.Viper.SetConfigName(CONFIG_FILE_NAME)
-			self.template.Viper.SetConfigType(self.template.Config.ConfigType)
+			for _, templateFile := range self.template.Content {
+				if templateFile.Name() == fmt.Sprintf("%s.%s", CONFIG_FILE_NAME, self.template.Config.ConfigType) {
+					// saving template path
+					self.template.Config.Path = path.Join(dir, fileInfo.Name())
+					templateFound = true
+
+					// setting config to viper using template config fields
+					self.template.Viper = viper.New()
+					self.template.Viper.AddConfigPath(self.template.Config.Path)
+					self.template.Viper.SetConfigName(CONFIG_FILE_NAME)
+					self.template.Viper.SetConfigType(self.template.Config.ConfigType)
+				}
+			}
 		}
 	}
 
