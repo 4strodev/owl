@@ -18,7 +18,7 @@ that template.
 - [x] Copy a local template
 - [x] Run preconfigured template scripts
 - [x] Copy a remote template
-- [ ] Ignore specific files with .owlignore file
+- [x] Ignore specific files with .owlignore file
 
 ## Installation
 ```shell
