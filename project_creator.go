@@ -1,6 +1,7 @@
 package owl
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"log"
@@ -8,8 +9,11 @@ import (
 	"os/exec"
 	"path"
 	"regexp"
+	"runtime"
+	"strings"
 
 	"github.com/4strodev/owl/template"
+	"github.com/gobwas/glob"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/viper"
@@ -17,7 +21,8 @@ import (
 
 const (
 	// Permission MODES
-	DIR_MODE int = 0755
+	DIR_MODE  int = 0755
+	FILE_MODE int = 0755
 
 	// FS errors
 	DIR_EXISTS          string = "Directory exists"
@@ -105,7 +110,7 @@ func (self *Project) Create() error {
 	self.template.RunOnCreateScripts()
 
 	// Copying template content
-	self.copyDir(self.template.Config.Path, self.Config.fullPath)
+	self.copyDir(self.template.Config.Path, self.Config.fullPath, []string{})
 
 	if self.Config.VerboseOutput {
 		fmt.Printf("Running on mount scripts\n")
@@ -297,7 +302,7 @@ func (self *Project) CreateRootFolder(path string) error {
 }
 
 // Copy a target directory to a destination directory recursively
-func (self *Project) copyDir(targetDirPath string, destination string) {
+func (self *Project) copyDir(targetDirPath string, destination string, globalIgnoreFiles []string) {
 	var err error
 	var pendingDirs []os.FileInfo // pendingDirs it's going to save the subdirectories paths
 
@@ -307,21 +312,43 @@ func (self *Project) copyDir(targetDirPath string, destination string) {
 		log.Panicf("Error reading %s: %s", targetDirPath, err)
 	}
 
+	localIgnoreFiles, err := self.readIgnoreFile(targetDirPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			panic(err)
+		}
+	}
+
+	globalIgnoreFiles = append(globalIgnoreFiles, localIgnoreFiles...)
+
+	// Files are loaded
 	for _, fileInfo := range targetContent {
+		var fileIgnored bool
 		// Don't copy the config file
-		if fileInfo.Name() == ".owlignore" {
-			//self.fs.Open(path.Join(targetDirPath, fileInfo.Name()))
-			continue
-		}
-
-		if fileInfo.Name() == ".git" {
-			continue
-		}
-
 		if fileInfo.Name() == "owl_config.toml" {
 			continue
 		}
+		if fileInfo.Name() == ".owlignore" {
+			continue
+		}
 
+		for _, ignoreFile := range globalIgnoreFiles {
+			log.Println("Entering on glob checking:", globalIgnoreFiles, fileInfo.Name())
+			delimiter := '/'
+			if runtime.GOOS == "windows" {
+				delimiter = '\\'
+			}
+			globRegex := glob.MustCompile(ignoreFile, delimiter)
+			if globRegex.Match(path.Join(targetDirPath, fileInfo.Name())) {
+				fileIgnored = true
+				continue
+			}
+		}
+
+		if fileIgnored {
+			log.Println("File ignored", fileInfo.Name())
+			continue
+		}
 		// If it's a dir add to pending dirs stack to copy their content
 		if fileInfo.IsDir() {
 			// Adding dir to pending directories
@@ -361,7 +388,38 @@ func (self *Project) copyDir(targetDirPath string, destination string) {
 				log.Panicf("Error craeting dir %s: %s", destinationDirPath, err)
 			}
 
-			self.copyDir(targetDirPath, destinationDirPath)
+			self.copyDir(targetDirPath, destinationDirPath, globalIgnoreFiles)
 		}
 	}
+}
+
+// Read the ignore file and return the regex thare exist there
+func (self *Project) readIgnoreFile(workingDirectory string) ([]string, error) {
+	var err error
+	var globs []string
+
+	file, err := self.fs.OpenFile(path.Join(workingDirectory, ".owlignore"), os.O_RDONLY, os.FileMode(FILE_MODE))
+	if err != nil {
+		return globs, err
+	}
+	defer file.Close()
+
+	// TODO get full path based on template directory
+	fileScanner := bufio.NewScanner(file)
+	fileScanner.Split(bufio.ScanLines)
+	for fileScanner.Scan() {
+		text := strings.Trim(fileScanner.Text(), " \n\t")
+		if text == "" || text[0] == '#'{
+			continue
+		}
+		globs = append(globs, path.Join(workingDirectory, text))
+	}
+
+	if err = fileScanner.Err(); err != nil {
+		return globs, err
+	}
+
+	log.Printf("%s\n", globs)
+
+	return globs, err
 }
