@@ -333,7 +333,6 @@ func (self *Project) copyDir(targetDirPath string, destination string, globalIgn
 		}
 
 		for _, ignoreFile := range globalIgnoreFiles {
-			log.Println("Entering on glob checking:", globalIgnoreFiles, fileInfo.Name())
 			delimiter := '/'
 			if runtime.GOOS == "windows" {
 				delimiter = '\\'
@@ -346,7 +345,6 @@ func (self *Project) copyDir(targetDirPath string, destination string, globalIgn
 		}
 
 		if fileIgnored {
-			log.Println("File ignored", fileInfo.Name())
 			continue
 		}
 		// If it's a dir add to pending dirs stack to copy their content
@@ -418,8 +416,6 @@ func (self *Project) readIgnoreFile(workingDirectory string) ([]string, error) {
 	if err = fileScanner.Err(); err != nil {
 		return globs, err
 	}
-
-	log.Printf("%s\n", globs)
 
 	return globs, err
 }
