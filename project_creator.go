@@ -165,9 +165,6 @@ func (self *Project) loadTemplate() error {
 func (self *Project) searchLocalTemplate(directories []string, templateName string) error {
 	var templateFound bool
 
-	// Searching template on temporary dir
-	// TODO recursive search
-
 	// Searching template in provided folders
 	for _, dir := range directories {
 		templateFound = self.searchTemplateOnDir(dir, templateName)
@@ -241,7 +238,6 @@ func (self *Project) searchTemplateOnDir(dir string, templateName string) bool {
 		if os.IsNotExist(err) {
 			return false
 		}
-		//log.Panic(err)
 	}
 
 	for _, fileInfo := range fileInfoList {
@@ -407,7 +403,7 @@ func (self *Project) readIgnoreFile(workingDirectory string) ([]string, error) {
 	fileScanner.Split(bufio.ScanLines)
 	for fileScanner.Scan() {
 		text := strings.Trim(fileScanner.Text(), " \n\t")
-		if text == "" || text[0] == '#'{
+		if text == "" || text[0] == '#' {
 			continue
 		}
 		globs = append(globs, path.Join(workingDirectory, text))
