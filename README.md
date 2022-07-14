@@ -1,7 +1,5 @@
 # Owl
 
-**⚠️ This library is under development**
-
 Owl is a Go library to create project generators for any framework or language. This is a personal project that you can use.
 There is no warranty if you have an error or bug publish an issue or make a pull request to improve this library.
 
