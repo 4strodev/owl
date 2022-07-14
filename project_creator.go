@@ -35,7 +35,6 @@ const (
 // Contains the project's config
 type ProjectConfig struct {
 	Name               string
-	fullPath           string
 	TemplateName       string
 	LocalTemplatesDirs []string
 	VerboseOutput      bool
@@ -95,10 +94,10 @@ func (self *Project) Create() error {
 	}
 
 	// Getting full path for the directory of the project
-	self.Config.fullPath = path.Join(WorkingDirectory, self.Config.Name)
+	self.template.WorkingDirectory = path.Join(WorkingDirectory, self.Config.Name)
 
 	// Creating application folder
-	err = self.CreateRootFolder(self.Config.fullPath)
+	err = self.CreateRootFolder(self.template.WorkingDirectory)
 	if err != nil {
 		return err
 	}
@@ -106,16 +105,20 @@ func (self *Project) Create() error {
 	if self.Config.VerboseOutput {
 		fmt.Printf("Running on create scripts\n")
 	}
-	os.Chdir(self.Config.fullPath)
+
+	// Changin working directory to template folder
+	os.Chdir(self.template.WorkingDirectory)
 	self.template.RunOnCreateScripts()
 
 	// Copying template content
-	self.copyDir(self.template.Config.Path, self.Config.fullPath, []string{})
+	self.copyDir(self.template.Config.Path, self.template.WorkingDirectory, []string{})
 
 	if self.Config.VerboseOutput {
 		fmt.Printf("Running on mount scripts\n")
 	}
-	os.Chdir(self.Config.fullPath)
+
+	// Changin working directory to template folder
+	os.Chdir(self.template.WorkingDirectory)
 	self.template.RunOnMountScripts()
 
 	fmt.Printf("Project created succesfully\n")

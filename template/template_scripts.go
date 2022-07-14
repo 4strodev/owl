@@ -41,9 +41,10 @@ func (self *TemplateScripts) Unmarshal(scriptsScopeMap map[string]scriptsMap) er
 	return err
 }
 
-func (self *TemplateScripts) run() error {
+func (self *TemplateScripts) run(WorkingDirectory string) error {
 	var err error
 	for key, script := range self.UniversalScripts {
+		os.Chdir(WorkingDirectory)
 		err = runScript(script)
 		if err != nil {
 			return fmt.Errorf("Error executing %s script: %s", key, err)
@@ -52,6 +53,7 @@ func (self *TemplateScripts) run() error {
 	switch runtime.GOOS {
 	case "linux":
 		for key, script := range self.LinuxScripts {
+			os.Chdir(WorkingDirectory)
 			err = runScript(script)
 			if err != nil {
 				return fmt.Errorf("Error executing %s script: %s", key, err)
@@ -59,6 +61,7 @@ func (self *TemplateScripts) run() error {
 		}
 	case "windows":
 		for key, script := range self.WindowsScripts {
+			os.Chdir(WorkingDirectory)
 			err = runScript(script)
 			if err != nil {
 				return fmt.Errorf("Error executing %s script: %s", key, err)
@@ -66,6 +69,7 @@ func (self *TemplateScripts) run() error {
 		}
 	case "darwin":
 		for key, script := range self.MacosScripts {
+			os.Chdir(WorkingDirectory)
 			err = runScript(script)
 			if err != nil {
 				return fmt.Errorf("Error executing %s script: %s", key, err)

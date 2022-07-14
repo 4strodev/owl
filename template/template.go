@@ -11,11 +11,12 @@ import (
 
 // The full template struct
 type ProjectTemplate struct {
-	Content         []os.FileInfo
-	Viper           *viper.Viper
-	Config          TemplateConfig
-	onCreateScripts TemplateScripts
-	onMountScripts  TemplateScripts
+	Content          []os.FileInfo
+	Viper            *viper.Viper
+	Config           TemplateConfig
+	onCreateScripts  TemplateScripts
+	onMountScripts   TemplateScripts
+	WorkingDirectory string
 }
 
 // Read the config file and load the data into template config
@@ -60,7 +61,6 @@ func (self *ProjectTemplate) LoadScripts() error {
 		}
 	}
 
-
 	self.onCreateScripts.Unmarshal(onCreateScriptsMap)
 	self.onMountScripts.Unmarshal(onMountScriptsMap)
 
@@ -100,7 +100,7 @@ func (self *ProjectTemplate) parseScripts(rawScripts scriptsMap, context map[str
 func (self *ProjectTemplate) RunOnCreateScripts() error {
 	var err error
 
-	err = self.onCreateScripts.run()
+	err = self.onCreateScripts.run(self.WorkingDirectory)
 	if err != nil {
 		fmt.Printf("%s\n", err)
 		os.Exit(1)
@@ -111,7 +111,7 @@ func (self *ProjectTemplate) RunOnCreateScripts() error {
 // Execute on mount scripts
 func (self *ProjectTemplate) RunOnMountScripts() error {
 	var err error
-	err = self.onMountScripts.run()
+	err = self.onMountScripts.run(self.WorkingDirectory)
 	if err != nil {
 		fmt.Printf("%s\n", err)
 		os.Exit(1)
