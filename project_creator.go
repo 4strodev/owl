@@ -2,16 +2,15 @@ package owl
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"regexp"
 	"runtime"
 	"strings"
 
+	"github.com/4strodev/owl/git"
 	"github.com/4strodev/owl/template"
 	"github.com/gobwas/glob"
 
@@ -168,9 +167,13 @@ func (self *Project) loadTemplate() error {
 func (self *Project) searchLocalTemplate(directories []string, templateName string) error {
 	var templateFound bool
 
+	templateDir := path.Dir(templateName)
+	base := path.Base(templateName)
+
 	// Searching template in provided folders
 	for _, dir := range directories {
-		templateFound = self.searchTemplateOnDir(dir, templateName)
+		dir = path.Join(dir, templateDir)
+		templateFound = self.searchTemplateOnDir(dir, base)
 	}
 
 	if templateFound {
@@ -184,7 +187,6 @@ func (self *Project) searchLocalTemplate(directories []string, templateName stri
 // download the template if does not exist
 func (self *Project) searchRemoteTemplate(templateRepo string) error {
 	var err error
-	var stderr *bytes.Buffer = new(bytes.Buffer)
 	var templateFound bool
 
 	// Removing https://
@@ -202,24 +204,26 @@ func (self *Project) searchRemoteTemplate(templateRepo string) error {
 		return err
 	}
 
-	// Creating command to clone repo
-	cloneTemplate := exec.Command("git", "clone", fmt.Sprintf("https://%s", parsedTemplateRepo), cloneDestination)
-	cloneTemplate.Stdout = os.Stdout
-	// Capturing errors in a buffer
-	// Because the error returned by commands
-	// is a status code and not error message
-	cloneTemplate.Stderr = stderr
-
-	// Executing command
 	if self.Config.VerboseOutput {
 		fmt.Printf("Cloning %s\n", templateRepo)
 	}
-	err = cloneTemplate.Run()
+	git.Clone(fmt.Sprintf("https://%s", parsedTemplateRepo), cloneDestination)
 
-	// If an error ocurred return the captured error message
-	if err != nil {
-		return fmt.Errorf(stderr.String())
-	}
+	//Creating command to clone repo
+	//cloneTemplate := exec.Command("git", "clone", fmt.Sprintf("https://%s", parsedTemplateRepo), cloneDestination)
+	//cloneTemplate.Stdout = os.Stdout
+	//Capturing errors in a buffer
+	//Because the error returned by commands
+	//is a status code and not error message
+	//cloneTemplate.Stderr = stderr
+
+	//Executing command
+	//err = cloneTemplate.Run()
+
+	//If an error ocurred return the captured error message
+	//if err != nil {
+	//return fmt.Errorf(stderr.String())
+	//}
 
 	// Search again the template on tmp dir
 	templateFound = self.searchTemplateOnDir(templateParentPath, templateName)
